@@ -87,7 +87,11 @@ class PiPresents(object):
 
         
         # Initialise logging and tracing
-        Monitor.log_path=pp_dir
+        # GCT: Allow pointing the location for the log directory elsewhere (like /var/log).
+        if not 'logroot' in self.options or self.options['logroot'] == "":
+            Monitor.log_path=pp_dir
+        else:
+            Monitor.log_path=self.options['logroot']
         self.mon=Monitor()
         # Init in PiPresents only
         self.mon.init()
