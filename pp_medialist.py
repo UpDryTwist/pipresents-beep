@@ -307,6 +307,97 @@ class MediaList(object):
 
 # open and save
 
+    def add_track_for_file(self, filename, filetype):
+        """
+        Simulates adding an image or video as if it was coming from a media list.
+        :param filename: The image to add
+        :return:
+        """
+
+        track = {}
+        track["type"] = filetype
+        track["location"] = filename
+        track["track-ref"] = ""
+        track["background-image"] = ""
+        track["background-colour"] = ""
+        track["animate-begin"] = ""
+        track["animate-end"] = ""
+        track["duration"] = ""
+        track["image-window"] = "fit"
+        track["image-rotation"] = ""
+        track["image-rotate"] = "0"
+        track["pause-timeout"] = ""
+        track["plugin"] = ""
+        track["track-text-x"] = ""
+        track["track-text-y"] = ""
+        track["track-text-justify"] = ""
+        track["track-text-font"] = ""
+        track["track-text-colour"] = ""
+        track["track-text"] = ""
+        track["display-show-background"] = ""
+        track["show-control-begin"] = ""
+        track["show-control-end"] = ""
+        track["thumbnail"] = ""
+        track["transition"] = "cut"
+        track["pause-text"] = ""
+        track["animate-clear"] = ""
+
+        track["omx-audio"] = ""
+        track["cmx-audio"] = ""
+        track["omx-volume"] = ""
+        track["omx-window"] = ""
+        track["omx-other-options"] = ""
+        track["freeze-at-start"] = ""
+        track["freeze-at-end"] = ""
+        track["seamless-loop"] = ""
+        track["pause-timeout"] = ""
+
+        self._tracks.append(track)
+        self._num_tracks = len(self._tracks)
+        self.mon.log(self, "Added file " + filename)
+
+    def open_directory(self,directory, match_glob, exclude_regex):
+        """
+        Opens a directory as if it was a tracklist of all the files in the directory.
+        Right now, we're hard-coding the files to look for to .jpg files ... but
+        extending it would be fairly straightforward ...
+        :param directory: Directory to scan for files and load everything with a matching extension.  Lame
+                          error-checking -- be sure no trailing slash
+        :param match_glob: A set of file-specs to scan for and match.  The list itself is separated by |.  Then
+                           each item in the list consists of a glob-type match, separated by # from the type
+                           (image or video) that we're matching.
+                           i.e., glob#type|glob#type|glob#type
+                           e.g., /**/*.jpg#image|/**/*.mpg#video
+        :param exclude_regex: A regular expression indicating files to skip
+        :return:
+        """
+
+        self.clear()
+
+        self.mon.log(self, "Adding files matching " + match_glob + " from " + directory)
+        self.mon.log(self, "Excluding files: " + exclude_regex)
+
+        import glob
+        import re
+        if len(exclude_regex) > 0:
+            matcher = re.compile(exclude_regex)
+        else:
+            matcher = None
+
+        pats = match_glob.split("|")
+        for each_pat in pats:
+            thisglob, type = each_pat.split("#")
+            self.mon.log(self, "Matching glob " + thisglob)
+            for filename in glob.iglob(directory + thisglob):
+                if matcher is None or not matcher.match(filename):
+                    self.add_track_for_file(filename, type)
+
+        self.mon.log(self, "Loaded " + str(self._num_tracks) + " files.")
+
+        self.last_num_tracks = self._num_tracks
+
+        return True
+
 
     def open_list(self,filename,profile_version):
         """
@@ -316,19 +407,40 @@ class MediaList(object):
         ifile  = open(filename, 'r')
         mdict = json.load(ifile)
         ifile.close()
-        self._tracks = mdict['tracks']
         if 'issue' in mdict:
             self.medialist_version_string= mdict['issue']
         else:
             self.medialist_version_string="1.0"
-            
-        if self.medialist_version()==profile_version:
-            self._num_tracks=len(self._tracks)
-            self.last_num_tracks=self._num_tracks
-            self._selected_track_index=-1
-            return True
+
+        # If the media file contains a loaddir key, then treat this as a directory to load, instead of a single file.
+        #   loaddir:  the directory to (recursively) load
+        #   exclude-regex:  optional - a regular expression to use to exclude files from the load (I use to exclude
+        #                   directories)
+        #   match-glob: a list of glob specs and types separated by |, where the glob spec and type are separated by #
+        # e.g.:
+        #   "loaddir":"/media/some-pictures"
+        #   "exclude-regex":".*\\/(skip-this-dir|skip-this-dir-also)\\/.*"
+        #   "match-glob":"//**/*.jpg#image|/**/*.JPG#image|/**/*.gif#image|/**/*.GIF#image|/***/*.mpg#video"
+        if 'loaddir' in mdict:
+            if 'match-glob' in mdict:
+                match_glob = mdict['match-glob']
+            else:
+                match_glob = "/**/*.jpg"
+            if 'exclude-regex' in mdict:
+                exclude_regex = mdict['exclude-regex']
+            else:
+                exclude_regex = ''
+            return self.open_directory(mdict['loaddir'], match_glob, exclude_regex)
         else:
-            return False
+            self._tracks = mdict['tracks']
+
+            if self.medialist_version()==profile_version:
+                self._num_tracks=len(self._tracks)
+                self.last_num_tracks=self._num_tracks
+                self._selected_track_index=-1
+                return True
+            else:
+                return False
 
     def medialist_version(self):
         vitems=self.medialist_version_string.split('.')

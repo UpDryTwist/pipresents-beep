@@ -13,6 +13,19 @@ from pp_statsrecorder import Statsrecorder
 # from pympler import summary, muppy
 # import types
 
+def dictread( dict, key, default ):
+    """
+    Useful little utility to safely read a key from a dictionary and return a default value if not there
+    :param dict: The dictionary from which to read
+    :param key:  Key to read (if present)
+    :param default:  Value to return if the key's not present
+    :return: The value for the key (if present), or the default.
+    """
+    if key in dict:
+        return dict[key]
+    else:
+        return default
+
 def calculate_text_position(x_text,y_text,x1,y1,centre_x,centre_y,width,height,justify_text):
     if x_text == '':
         x=x1+centre_x

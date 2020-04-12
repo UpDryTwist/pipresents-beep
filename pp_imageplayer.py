@@ -5,8 +5,9 @@ import os
 from tkinter import CENTER,NW
 from PIL import Image
 from PIL import ImageTk
-from pp_utils import StopWatch, parse_rectangle,calculate_text_position
+from pp_utils import StopWatch, parse_rectangle,calculate_text_position,dictread,getplace
 from pp_player import Player
+from PIL.ExifTags import TAGS, GPSTAGS
 
 class ImagePlayer(Player):
 
@@ -93,9 +94,77 @@ class ImagePlayer(Player):
         self.pause_timer= None
 
         # initialise the state machine
-        self.play_state='initialised'    
-            
-            
+        self.play_state='initialised'
+
+    def read_tags(self, image):
+        """
+        Reads the tags from the EXIF data in the image and returns them in a dictionary.
+        :param image: Image to read tags from
+        :return: Dictionary with human names as the index and tag values as the value, and a separate dictionary of the GPS tags
+        """
+        dict = {}
+        gps_dict = {}
+        try:
+            exif_tags = image._getexif()
+        except:
+            exif_tags = None
+
+        if exif_tags:
+            for tag, value in exif_tags.items():
+                decoded = TAGS.get(tag, tag)
+                dict[decoded] = value
+                if decoded == "GPSInfo":
+                    for t in value:
+                        sub_decoded = GPSTAGS.get(t, t)
+                        gps_dict[sub_decoded] = value[t]
+        return dict, gps_dict
+
+    def getplace(latitude, longitude):
+        import json
+        from urllib2 import urlopen
+
+        url = "http://maps.googleapis.com/maps/api/geocode/json?latlng=%s,%s&sensor=false" % (latitude, longitude)
+        v = urlopen(url).read()
+        j = json.loads(v)
+        components = j['results'][0]['address_components']
+        country = town = None
+        for c in components:
+            if "country" in c['types']:
+                country = c['long_name']
+            if "postal_town" in c['types']:
+                town = c['long_name']
+        return town, country
+
+    def get_location(self, image):
+        """
+        Read the location from the image, using EXIF data and a google lookup
+        :param image:
+        :return: string for the location, or None if not resolvable
+        """
+        dict, gps_dict = self.read_tags(image)
+        latitude = dictread(gps_dict, 'GPSLatitude', None)
+        longitude = dictread(gps_dict, 'GPSLongitude', None)
+        if latitude and longitude:
+            return getplace(latitude, longitude)
+        else:
+            return None
+
+    def rotate_image(self, image, orientation):
+        """
+        Read the EXIF data, and rotate the image appropriately if needed
+        :param image:
+        :param orientation:
+        :return: Original image, or a rotated image if appropriate.
+        """
+        if orientation:
+            if orientation == 3:
+                image = image.rotate(180, expand=True)
+            elif orientation == 6:
+                image = image.rotate(270, expand=True)
+            elif orientation == 8:
+                image = image.rotate(90, expand=True)
+        return image
+
     # LOAD - loads the images and text
     def load(self,track,loaded_callback,enable_menu):  
         # instantiate arguments
@@ -312,100 +381,122 @@ class ImagePlayer(Player):
             self.track_image_obj=None
             return 'error','Track file not found '+ self.track
 
+        tags, gps_tags = self.read_tags(ppil_image)
+
         # display track image
         if ppil_image is not None:
-            #rotate the image
-            # print self.image_width,self.image_height
-            if self.image_rotate!=0:
-                ppil_image=ppil_image.rotate(self.image_rotate,expand=True)      
-            self.image_width,self.image_height=ppil_image.size
-            # print self.image_width,self.image_height
 
-            
-            if self.command == 'original':
-                # display image at its original size
-                if self.has_coords is False:
-                    
-                    # load and display the unmodified image in centre
-                    self.tk_img=ImageTk.PhotoImage(ppil_image)
-                    del ppil_image
-                    self.track_image_obj = self.canvas.create_image(self.show_canvas_centre_x+self.show_canvas_x1,
-                                                                    self.show_canvas_centre_y+self.show_canvas_y1,
-                                                                    image=self.tk_img, anchor=CENTER)
-                else:
-                    # load and display the unmodified image at x1,y1
-                    self.tk_img=ImageTk.PhotoImage(ppil_image)
-                    del ppil_image
-                    self.track_image_obj = self.canvas.create_image(self.window_x1+self.show_canvas_x1,
-                                                                    self.window_y1+self.show_canvas_y1,
-                                                                    image=self.tk_img, anchor=NW)
+            try:
 
+                #rotate the image
+                # print self.image_width,self.image_height
+                if self.image_rotate!=0:
+                    ppil_image=ppil_image.rotate(self.image_rotate,expand=True)
+                self.image_width,self.image_height=ppil_image.size
+                # print self.image_width,self.image_height
 
-            elif self.command in ('fit','shrink'):
-                # shrink fit the window or screen preserving aspect
-                if self.has_coords is True:
-                    window_width=self.window_x2 - self.window_x1
-                    window_height=self.window_y2 - self.window_y1
-                    window_centre_x=(self.window_x2+self.window_x1)/2
-                    window_centre_y= (self.window_y2+self.window_y1)/2
-                else:
-                    window_width=self.show_canvas_width
-                    window_height=self.show_canvas_height
-                    window_centre_x=self.show_canvas_centre_x
-                    window_centre_y=self.show_canvas_centre_y
-                if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
-                    # print 'show canvas',self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
-                    # print 'canvas width/height/centre',self.show_canvas_width,self.show_canvas_height,self.show_canvas_centre_x,self.show_canvas_centre_y
-                    # print 'window dimensions/centre',window_width,window_height,window_centre_x,window_centre_y
-                    # print
-                    # original image is larger or , shrink it to fit the screen preserving aspect
-                    # print ppil_image.size
-                    ppil_image.thumbnail((int(window_width),int(window_height)),eval(self.image_filter))
-                    # print ppil_image.size
-                    self.tk_img=ImageTk.PhotoImage(ppil_image)
-                    del ppil_image
-                    self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
-                                                                    window_centre_y + self.show_canvas_y1,
-                                                                    image=self.tk_img, anchor=CENTER)
-                else:
-                    # fitting and original image is smaller, expand it to fit the screen preserving aspect
-                    prop_x = float(window_width) / self.image_width
-                    prop_y = float(window_height) / self.image_height
-                    if prop_x > prop_y:
-                        prop=prop_y
+                datetime = dictread(tags, 'DateTimeOrigional', dictread(tags, 'DateTime', None))
+                description = dictread(tags, 'ImageDescription', None)
+                # location = self.getLocation(ppil_image)
+                # Auto-rotate the image if the EXIF data has orientation information.
+                orientation = dictread(tags, 'Orientation', None)
+                ppil_image = self.rotate_image(ppil_image, orientation)
+
+                if self.command == 'original':
+                    # display image at its original size
+                    if self.has_coords is False:
+
+                        # load and display the unmodified image in centre
+                        self.tk_img=ImageTk.PhotoImage(ppil_image)
+                        del ppil_image
+                        self.track_image_obj = self.canvas.create_image(self.show_canvas_centre_x+self.show_canvas_x1,
+                                                                        self.show_canvas_centre_y+self.show_canvas_y1,
+                                                                        image=self.tk_img, anchor=CENTER)
                     else:
-                        prop=prop_x
-                        
-                    increased_width=int(self.image_width * prop)
-                    increased_height=int(self.image_height * prop)
-                    # print 'result',prop, increased_width,increased_height
-                    ppil_image=ppil_image.resize((int(increased_width), int(increased_height)),eval(self.image_filter))
+                        # load and display the unmodified image at x1,y1
+                        self.tk_img=ImageTk.PhotoImage(ppil_image)
+                        del ppil_image
+                        self.track_image_obj = self.canvas.create_image(self.window_x1+self.show_canvas_x1,
+                                                                        self.window_y1+self.show_canvas_y1,
+                                                                        image=self.tk_img, anchor=NW)
+
+
+                elif self.command in ('fit','shrink'):
+                    # shrink fit the window or screen preserving aspect
+                    if self.has_coords is True:
+                        window_width=self.window_x2 - self.window_x1
+                        window_height=self.window_y2 - self.window_y1
+                        window_centre_x=(self.window_x2+self.window_x1)/2
+                        window_centre_y= (self.window_y2+self.window_y1)/2
+                    else:
+                        window_width=self.show_canvas_width
+                        window_height=self.show_canvas_height
+                        window_centre_x=self.show_canvas_centre_x
+                        window_centre_y=self.show_canvas_centre_y
+                    if (self.image_width > window_width or self.image_height > window_height and self.command == 'fit') or (self.command == 'shrink') :
+                        # print 'show canvas',self.show_canvas_x1,self.show_canvas_y1,self.show_canvas_x2,self.show_canvas_y2
+                        # print 'canvas width/height/centre',self.show_canvas_width,self.show_canvas_height,self.show_canvas_centre_x,self.show_canvas_centre_y
+                        # print 'window dimensions/centre',window_width,window_height,window_centre_x,window_centre_y
+                        # print
+                        # original image is larger or , shrink it to fit the screen preserving aspect
+                        # print ppil_image.size
+                        ppil_image.thumbnail((int(window_width),int(window_height)),eval(self.image_filter))
+                        # print ppil_image.size
+                        self.tk_img=ImageTk.PhotoImage(ppil_image)
+                        del ppil_image
+                        self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
+                                                                        window_centre_y + self.show_canvas_y1,
+                                                                        image=self.tk_img, anchor=CENTER)
+                    else:
+                        # fitting and original image is smaller, expand it to fit the screen preserving aspect
+                        prop_x = float(window_width) / self.image_width
+                        prop_y = float(window_height) / self.image_height
+                        if prop_x > prop_y:
+                            prop=prop_y
+                        else:
+                            prop=prop_x
+
+                        increased_width=int(self.image_width * prop)
+                        increased_height=int(self.image_height * prop)
+                        # print 'result',prop, increased_width,increased_height
+                        ppil_image=ppil_image.resize((int(increased_width), int(increased_height)),eval(self.image_filter))
+                        self.tk_img=ImageTk.PhotoImage(ppil_image)
+                        del ppil_image
+                        self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
+                                                                        window_centre_y + self.show_canvas_y1,
+                                                                        image=self.tk_img, anchor=CENTER)
+
+                elif self.command in ('warp'):
+                    # resize to window or screen without preserving aspect
+                    if self.has_coords is True:
+                        window_width=self.window_x2 - self.window_x1
+                        window_height=self.window_y2 - self.window_y1
+                        window_centre_x=(self.window_x2+self.window_x1)/2
+                        window_centre_y= (self.window_y2+self.window_y1)/2
+                    else:
+                        window_width=self.show_canvas_width
+                        window_height=self.show_canvas_height
+                        window_centre_x=self.show_canvas_centre_x
+                        window_centre_y=self.show_canvas_centre_y
+
+                    # print 'window',window_width,window_height,window_centre_x,window_centre_y,self.show_canvas_x1,self.show_canvas_y1,'\n'
+                    ppil_image=ppil_image.resize((int(window_width), int(window_height)),eval(self.image_filter))
                     self.tk_img=ImageTk.PhotoImage(ppil_image)
                     del ppil_image
-                    self.track_image_obj = self.canvas.create_image(window_centre_x + self.show_canvas_x1,
-                                                                    window_centre_y + self.show_canvas_y1,
-                                                                    image=self.tk_img, anchor=CENTER)                                                 
+                    self.track_image_obj = self.canvas.create_image(window_centre_x+ self.show_canvas_x1,
+                                                                    window_centre_y+ self.show_canvas_y1,
+                                                                   image=self.tk_img, anchor=CENTER)
 
-            elif self.command in ('warp'):
-                # resize to window or screen without preserving aspect
-                if self.has_coords is True:
-                    window_width=self.window_x2 - self.window_x1
-                    window_height=self.window_y2 - self.window_y1
-                    window_centre_x=(self.window_x2+self.window_x1)/2
-                    window_centre_y= (self.window_y2+self.window_y1)/2
-                else:
-                    window_width=self.show_canvas_width
-                    window_height=self.show_canvas_height
-                    window_centre_x=self.show_canvas_centre_x
-                    window_centre_y=self.show_canvas_centre_y
+            except IOError:
+                self.tk_img=None
+                self.track_image_obj=None
+                return 'error', 'Error processing the file, probably truncation error: ' + self.track
 
-                # print 'window',window_width,window_height,window_centre_x,window_centre_y,self.show_canvas_x1,self.show_canvas_y1,'\n'
-                ppil_image=ppil_image.resize((int(window_width), int(window_height)),eval(self.image_filter))
-                self.tk_img=ImageTk.PhotoImage(ppil_image)
-                del ppil_image
-                self.track_image_obj = self.canvas.create_image(window_centre_x+ self.show_canvas_x1,
-                                                                window_centre_y+ self.show_canvas_y1,
-                                                               image=self.tk_img, anchor=CENTER)
+            except Exception as ex:
+                self.tk_img=None
+                self.track_image_obj=None
+                return 'error', 'Error processing the file: ' + str(ex).encode('utf-8') + ' --> ' + self.track
+
         self.canvas.itemconfig(self.track_image_obj,state='hidden')
         return 'normal','track content loaded';
 
