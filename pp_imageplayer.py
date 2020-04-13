@@ -5,7 +5,7 @@ import os
 from tkinter import CENTER,NW
 from PIL import Image
 from PIL import ImageTk
-from pp_utils import StopWatch, parse_rectangle,calculate_text_position,dictread,getplace
+from pp_utils import StopWatch, parse_rectangle,calculate_text_position,dictread
 from pp_player import Player
 from PIL.ExifTags import TAGS, GPSTAGS
 
