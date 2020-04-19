@@ -76,22 +76,22 @@ class PiPresents(object):
         self.options=command_options()
         # print (self.options)
 
+        # GCT: If set, turn off displaying an error box; default to showing errors in the UI
+        Monitor.no_ui_interaction = dictread(self.options, 'nouierrors', False)
+
         # get Pi Presents code directory
         # GCT:  Allow overriding on the command-line for, e.g., remote debugging in PyCharm
         pp_dir=dictread(self.options, 'apphome', sys.path[0])
         self.pp_dir=pp_dir
         
         if not os.path.exists(pp_dir+"/pipresents.py"):
-            if self.options['manager']  is False:
-                tkinter.messagebox.showwarning("Pi Presents","Bad Application Directory")
+            if self.options['manager'] is False and not Monitor.no_ui_interaction:
+                tkinter.messagebox.showwarning("Pi Presents","Bad Application Directory: " + pp_dir)
             exit(102)
 
-        
         # Initialise logging and tracing
         # GCT: Allow pointing the location for the log directory elsewhere (like /var/log); default to pp_dir
         Monitor.log_path = dictread(self.options, 'logroot', pp_dir)
-        # GCT: If set, turn off displaying an error box; default to showing errors in the UI
-        Monitor.no_ui_interaction = dictread(self.options, 'nouierrors', False)
         self.mon=Monitor()
         # Init in PiPresents only
         self.mon.init()
