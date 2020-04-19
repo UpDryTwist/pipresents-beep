@@ -873,8 +873,9 @@ if __name__ == '__main__':
     # wait for environment variables to stabilize. Required for Jessie autostart
     tries=0
     success=False
-    success=True
-    # GCT:  This breaks remote debugging in PyCharm.  Start success=True for that ...
+    # success=True
+    # GCT:  This breaks remote debugging in PyCharm, as our executing directory isn't first in path.
+    #       Start success=True for that ...
     while not success and tries < 40:
         # get directory holding the code
         code_dir=sys.path[0]
