@@ -380,6 +380,7 @@ class GapShow(Show):
         if self.current_player.play_state == 'load-failed':
             if self.ignore_failed_tracks:
                 # OK ... just keep truckin'
+                self.mon.log(self, 'Failed track, but continuing on to play the next track.')
                 self.req_next = 'finished-player'
             else:
                 self.error_signal=True
