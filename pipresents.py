@@ -126,7 +126,7 @@ class PiPresents(object):
         # self.mon.log (self," OS and separator:" + os.name +'  ' + os.sep)
         self.mon.log(self,"sys.path[0] -  location of code: "+sys.path[0])
 
-        self.mon.log(self, "no_ui_interaction = " + Monitor.no_ui_interaction)
+        self.mon.log(self, "no_ui_interaction = " + str(Monitor.no_ui_interaction))
 
         # log versions of Raspbian and omxplayer, and GPU Memory
         with open("/boot/issue.txt") as ifile:
