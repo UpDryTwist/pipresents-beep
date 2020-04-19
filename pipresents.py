@@ -87,6 +87,8 @@ class PiPresents(object):
         if not os.path.exists(pp_dir+"/pipresents.py"):
             if self.options['manager'] is False and not Monitor.no_ui_interaction:
                 tkinter.messagebox.showwarning("Pi Presents","Bad Application Directory: " + pp_dir)
+            else:
+                sys.print("Bad application directory: " + pp_dir)
             exit(102)
 
         # Initialise logging and tracing
