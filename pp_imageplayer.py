@@ -371,7 +371,7 @@ class ImagePlayer(Player):
             try:
                 ppil_image=Image.open(self.track)
             except Exception as ex:
-                Monitor().log(self, 'Error "' + str(ex).encode('utf-8') + '" loading ' + self.track)
+                Monitor().log(self, 'Error "' + str(ex) + '" loading ' + self.track)
                 ppil_image=None
                 self.tk_img=None
                 self.track_image_obj=None
