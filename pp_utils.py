@@ -26,6 +26,21 @@ def dictread( dict, key, default ):
     else:
         return default
 
+def dictread_bool( dict, key, default):
+    """
+    Like dictread, but supports reading a boolean configuration value, and returning a default if not there.
+    Treats 1, yes, y, t, true, on as all being True, and everything else as being False.
+    :param dict:  The dictionary from which to read
+    :param key:   The key to read (if present)
+    :param default:  Value for the key (if present), or the default.
+    :return:  The key value interpreted as a boolean (if present), or the default
+    """
+    if key in dict:
+        val = dict[key]
+        return str(val).lower() in ("yes", "y", "true", "t", "1", "on")
+    else:
+        return default
+
 def calculate_text_position(x_text,y_text,x1,y1,centre_x,centre_y,width,height,justify_text):
     if x_text == '':
         x=x1+centre_x
