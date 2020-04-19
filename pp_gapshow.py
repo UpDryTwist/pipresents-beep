@@ -378,7 +378,11 @@ class GapShow(Show):
     def what_next_after_load(self,status,message):
         self.mon.log(self,'Show Id ' + str(self.show_id)+' load complete with status: ' + status +'  message: ' +message)
         if self.current_player.play_state == 'load-failed':
-            self.error_signal=True
+            if self.ignore_failed_tracks:
+                # OK ... just keep truckin'
+                self.req_next = 'finished-player'
+            else:
+                self.error_signal=True
             self.what_next_after_showing()
 
         else:

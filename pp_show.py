@@ -14,7 +14,7 @@ from pp_audioplayer import AudioPlayer
 from pp_browserplayer import BrowserPlayer
 from pp_messageplayer import MessagePlayer
 from pp_menuplayer import MenuPlayer
-from pp_utils import Monitor,calculate_text_position
+from pp_utils import Monitor,calculate_text_position,dictread
 
 class Show(object):
 
@@ -93,6 +93,8 @@ class Show(object):
         # print 'background', self.show_params['background-image']
         if self.show_params['background-image'] != '':
             self.background_file= self.show_params['background-image']
+        # GCT:  Allow setting a show parameter to keep going if any tracks fail
+        self.ignore_failed_tracks = dictread(self.show_params, 'ignore-failed-tracks', False)
 
     def base_play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
 
