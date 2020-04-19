@@ -5,7 +5,7 @@ import os
 from tkinter import CENTER,NW
 from PIL import Image
 from PIL import ImageTk
-from pp_utils import StopWatch, parse_rectangle,calculate_text_position,dictread
+from pp_utils import StopWatch, parse_rectangle,calculate_text_position,dictread,Monitor
 from pp_player import Player
 from PIL.ExifTags import TAGS, GPSTAGS
 
@@ -370,7 +370,8 @@ class ImagePlayer(Player):
         if os.path.exists(self.track) is True:
             try:
                 ppil_image=Image.open(self.track)
-            except:
+            except Exception as ex:
+                Monitor().log(self, 'Error "' + str(ex).encode('utf-8') + '" loading ' + self.track)
                 ppil_image=None
                 self.tk_img=None
                 self.track_image_obj=None
