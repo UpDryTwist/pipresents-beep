@@ -381,8 +381,10 @@ class GapShow(Show):
             self.mon.log(self, "Ignore failed = " + str(self.ignore_failed_tracks))
             if self.ignore_failed_tracks :
                 # OK ... just keep trucking
-                self.mon.log(self, 'Failed track, but continuing on to play the next track.')
-                self.req_next = 'finished-player'
+                # self.mon.log(self, 'Failed track, but continuing on to play the next track.')
+                # self.req_next = 'finished-player'
+                self.mon.log(self, 'Failed track, but going on to show, to get out of the stack depth.')
+                self.current_player.show(self.track_ready_callback,self.finished_showing,self.closed_after_showing)
             else:
                 self.error_signal=True
             self.what_next_after_showing()

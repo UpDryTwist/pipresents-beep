@@ -95,7 +95,6 @@ class Show(object):
             self.background_file= self.show_params['background-image']
         # GCT:  Allow setting a show parameter to keep going if any tracks fail
         self.ignore_failed_tracks = dictread_bool(self.show_params, 'ignore-failed-tracks', False)
-        self.mon.log(self, "Ignore failed tracks = " + str(dictread(self.show_params, 'ignore-failed-tracks', "xxx") + " -> " + str(self.ignore_failed_tracks)))
 
     def base_play(self,end_callback,show_ready_callback, parent_kickback_signal,level,controls_list):
 
