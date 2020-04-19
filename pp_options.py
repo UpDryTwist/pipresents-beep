@@ -20,6 +20,7 @@ def command_options():
     parser.add_argument( '-n','--nonetwork', nargs='?', default=wait_no_w, const=wait_w,help='Enable wait for network [and time in secs]')
     parser.add_argument( '--loadcounters', action='store_true',help='Load counters form Start Show')
     parser.add_argument('-g', '--logroot', nargs='?', default='', const='', help='Path to pp_logs parent directory (e.g., /var/log)')
+    parser.add_argument( '--nouierrors', action='store_true', help='Use when running "headless" to suppress UI error boxes')
 
     args=parser.parse_args()
     return  vars(args)

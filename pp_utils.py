@@ -199,7 +199,9 @@ class Monitor(object):
     track_count=0
 
     stats_file=None
-    sr=None          # 
+    sr=None          #
+
+    no_ui_interaction = False  # If true, won't pop up error boxes.  For running headless and more resilient.
 
 # called at start by pipresents
     def init(self):
@@ -258,7 +260,7 @@ class Monitor(object):
         if self.enabled(r_class,Monitor.m_fatal) is True: 
             print("%.2f" % (time.time()-Monitor.start_time), " System Error: ",r_class+"/"+ r_func + "/"+ r_line + ": ", text)
             Monitor.ofile.write (" SYSTEM ERROR: " + r_class +"/"+ r_func + "/"+ r_line + ": " + text + "\n")
-        if Monitor.manager is False:
+        if Monitor.manager is False and not Monitor.no_ui_interaction:
             tkinter.messagebox.showwarning(r_class ,'System Error:\n'+text)
 
     def err(self,caller,text):
@@ -266,7 +268,7 @@ class Monitor(object):
         if self.enabled(r_class,Monitor.m_err) is True:        
             print("%.2f" % (time.time()-Monitor.start_time), " Profile Error: ",r_class+": ", text)
             Monitor.ofile.write (" ERROR: " + self.pretty_inst(caller)+ ":  " + text + "\n")
-        if Monitor.manager is False:
+        if Monitor.manager is False and not Monitor.no_ui_interaction:
             tkinter.messagebox.showwarning(r_class ,'Profile Error:\n'+text)
                                         
     def warn(self,caller,text):

@@ -31,7 +31,7 @@ from pp_showlist import ShowList
 from pp_showmanager import ShowManager
 from pp_screendriver import ScreenDriver
 from pp_timeofday import TimeOfDay
-from pp_utils import Monitor
+from pp_utils import Monitor, dictread
 from pp_utils import StopWatch
 from pp_animate import Animate
 from pp_oscdriver import OSCDriver
@@ -87,11 +87,10 @@ class PiPresents(object):
 
         
         # Initialise logging and tracing
-        # GCT: Allow pointing the location for the log directory elsewhere (like /var/log).
-        if not 'logroot' in self.options or self.options['logroot'] == "":
-            Monitor.log_path=pp_dir
-        else:
-            Monitor.log_path=self.options['logroot']
+        # GCT: Allow pointing the location for the log directory elsewhere (like /var/log); default to pp_dir
+        Monitor.log_path = dictread(self.options, 'logroot', pp_dir)
+        # GCT: If set, turn off displaying an error box; default to showing errors in the UI
+        Monitor.no_ui_interaction = dictread(self.options, 'nouierrors', False)
         self.mon=Monitor()
         # Init in PiPresents only
         self.mon.init()
