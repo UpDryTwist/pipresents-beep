@@ -77,7 +77,8 @@ class PiPresents(object):
         # print (self.options)
 
         # get Pi Presents code directory
-        pp_dir=sys.path[0]
+        # GCT:  Allow overriding on the command-line for, e.g., remote debugging in PyCharm
+        pp_dir=dictread(self.options, 'apphome', sys.path[0])
         self.pp_dir=pp_dir
         
         if not os.path.exists(pp_dir+"/pipresents.py"):
@@ -872,7 +873,9 @@ if __name__ == '__main__':
     # wait for environment variables to stabilize. Required for Jessie autostart
     tries=0
     success=False
-    while tries < 40:
+    success=True
+    # GCT:  This breaks remote debugging in PyCharm.  Start success=True for that ...
+    while not success and tries < 40:
         # get directory holding the code
         code_dir=sys.path[0]
         code_path=code_dir+os.sep+'pipresents.py'

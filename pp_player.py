@@ -101,11 +101,6 @@ class Player(object):
     def pre_show(self):
         self.mon.trace(self,'')
 
-        # GCT:  Bail out here ...
-        if self.play_state == 'load-failed':
-            self.mon.log(self, "Bailing out of pre_show(), as load failed")
-            return
-
         # show_x_content moved to just before ready_callback to improve flicker.
         self.show_x_content()
   

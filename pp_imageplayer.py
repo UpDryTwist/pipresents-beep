@@ -234,6 +234,11 @@ class ImagePlayer(Player):
         self.paused=False
         self.pause_text_obj=None
 
+        # GCT:  Bail out here ... but we need to set the tick timer to come back to us to clean up.
+        if self.play_state == 'load-failed':
+            self.tick_timer = self.canvas.after(self.tick, self.do_dwell)
+            return
+
         # do common bits
         Player.pre_show(self)
         
@@ -327,9 +332,8 @@ class ImagePlayer(Player):
                 self.finished_callback('pause_at_end','user quit or duration exceeded')
                 # use finish so that the show will call close
         else:
-            # GCT:  Try this: if the load failed, bail out here, where we've unwound the stack.
+            # GCT:  If the load failed, bail out here, where we've unwound the stack.
             if self.play_state == 'load-failed':
-                self.mon.log(self, "!! Dwelling, in a failed load, so exiting out.")
                 self.finished_callback('pause_at_end', 'load failed, bailing out')
                 return
 

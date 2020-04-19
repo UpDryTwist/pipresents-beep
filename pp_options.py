@@ -21,6 +21,7 @@ def command_options():
     parser.add_argument( '--loadcounters', action='store_true',help='Load counters form Start Show')
     parser.add_argument('-g', '--logroot', nargs='?', default='', const='', help='Path to pp_logs parent directory (e.g., /var/log)')
     parser.add_argument( '--nouierrors', default=False, action='store_true', help='Use when running "headless" to suppress UI error boxes')
+    parser.add_argument('-a', '--apphome', nargs='?', default='', const='', help='Override the path to our application (e.g., for remote debugging)')
 
     args=parser.parse_args()
     return  vars(args)
