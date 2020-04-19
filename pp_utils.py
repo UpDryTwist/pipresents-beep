@@ -22,7 +22,11 @@ def dictread( dict, key, default ):
     :return: The value for the key (if present), or the default.
     """
     if key in dict:
-        return dict[key]
+        val = dict[key]
+        if len(str(val)) < 1:
+            return default
+        else:
+            return val
     else:
         return default
 
