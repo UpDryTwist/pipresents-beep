@@ -322,6 +322,7 @@ class MediaList(object):
         track["background-colour"] = ""
         track["animate-begin"] = ""
         track["animate-end"] = ""
+        track["display-name"] = ""
         track["duration"] = ""
         track["image-window"] = "fit"
         track["image-rotation"] = ""
