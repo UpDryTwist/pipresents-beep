@@ -350,6 +350,7 @@ class MediaList(object):
         track["omx-audio"] = ""
         track["cmx-audio"] = ""
         track["omx-volume"] = ""
+        track["omx-max-volume"] = ""
         track["omx-window"] = ""
         track["omx-other-options"] = ""
         track["freeze-at-start"] = ""
