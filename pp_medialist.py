@@ -354,8 +354,8 @@ class MediaList(object):
         track["omx-max-volume"] = ""
         track["omx-window"] = ""
         track["omx-other-options"] = ""
-        track["freeze-at-start"] = ""
-        track["freeze-at-end"] = ""
+        track["freeze-at-start"] = "no"
+        track["freeze-at-end"] = "no"
         track["seamless-loop"] = ""
         track["pause-timeout"] = ""
 
