@@ -505,6 +505,11 @@ class VideoPlayer(Player):
         # race condition don't start state machine as unload in progress
         elif self.play_state == 'start_unload':
             pass
+        # handle a failed load ... need to back out of the call stack first, then pick it up on tick handler
+        elif self.play_state == 'load-failed':
+            # Need to start the tick_timer
+            self.mon.log(self, '>load failed ... waiting to quit for show ID: ' + str(self.show_id))
+            self.tick_timer=self.canvas.after(0, self.show_state_machine)
         else:
             self.mon.fatal(self,'illegal state in show method ' + self.play_state)
             self.play_state='show-failed'
@@ -629,7 +634,12 @@ class VideoPlayer(Player):
     def show_state_machine(self):
         # print self.play_state
         # if self.play_state != 'showing': print 'show state is '+self.play_state
-        if self.play_state == 'showing':
+        if self.play_state == 'load-failed':
+            self.mon.log(self, "      load failed ... exiting from within loop")
+            self.omx.stop()
+            self.play_state = 'closing'
+            self.tick_timer = self.canvas.after(50, self.show_state_machine)
+        elif self.play_state == 'showing':
             # service any queued stop signals by sending quit to omxplayer
             # self.mon.log(self,"      State machine: " + self.play_state)
             if self.quit_signal is True:
